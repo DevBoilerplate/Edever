@@ -25,3 +25,9 @@ Edever是electron、antd、antv集成开发项目的命令行工具，用于项�
 ```shell
 edever -h
 ```
+
+## Gitee&&GitHub
+
+GitHub: [HerbertHe/Edever](https://github.com/HerbertHe/Edever)
+
+Gitee: [HerbertHe/Edever](https://gitee.com/HerbertHe/Edever)

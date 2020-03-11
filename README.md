@@ -8,9 +8,9 @@ Edever是electron、antd、antv集成开发项目的命令行工具，用于项�
 
 | 文件名 | 平台 |
 | :---- | ---- |
-| edever.exe | Windows |
-| edever.app | MacOS |
-| edever | Linux |
+| edever-win | Windows |
+| edever-mac | MacOS |
+| edever-linux | Linux |
 
 * 对于Windows平台
 

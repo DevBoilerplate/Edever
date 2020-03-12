@@ -16,7 +16,7 @@ var (
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "用于获取模板初始化项目",
+	Short: "用于获取最新模板初始化项目",
 	Long: `
 从远程获取项目模板
 edever init -r gitee 从Gitee获取(默认从GitHub)

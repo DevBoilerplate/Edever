@@ -1,12 +1,10 @@
 package cmd
 
 import (
+	"cobra.new/utils"
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 	"runtime"
 )
 
@@ -17,109 +15,76 @@ var (
 	tag  string
 )
 
-func getLatest(repo string) (name string, created string, backDown map[string]string) {
+type Source struct {
+	tag string
+	created string
+	assets map[string]string
+}
+
+func getLatest(repo string) Source {
 	if repo == "gitee" {
-		u, _ := url.Parse("https://gitee.com/api/v5/repos/HerbertHe/Edever/releases/latest")
-		res, err := http.Get(u.String())
-		if err != nil {
-			fmt.Println(err)
-		}
-		result, err := ioutil.ReadAll(res.Body)
-		_ = res.Body.Close()
-		if err != nil {
-			fmt.Println(err)
-		}
+		result := utils.SendGet("https://gitee.com/api/v5/repos/HerbertHe/Edever/releases/latest")
 		var dataMap map[string]interface{}
 		if err := json.Unmarshal([]byte(result), &dataMap); err == nil {
 			assets := make(map[string]string)
+			var source Source
 			for _, value := range dataMap["assets"].([]interface{}) {
 				item := value.(map[string]interface{})
 				if item["name"] != nil {
 					assets[item["name"].(string)] = item["browser_download_url"].(string)
 				}
 			}
-			return dataMap["tag_name"].(string), dataMap["created_at"].(string), assets
+			source.tag = dataMap["tag_name"].(string)
+			source.created = dataMap["created_at"].(string)
+			source.assets = assets
+			return source
+		}
+		return Source{
+			tag:     "",
+			created: "",
+			assets:  nil,
 		}
 	}
-	if repo == "github" {
-		u, _ := url.Parse("https://api.github.com/repos/HerbertHe/Edever/releases/latest")
-		res, err := http.Get(u.String())
-		if err != nil {
-			fmt.Println(err)
-		}
-		result, err := ioutil.ReadAll(res.Body)
-		_ = res.Body.Close()
-		if err != nil {
-			fmt.Println(err)
-		}
-		var dataMap map[string]interface{}
-		if err := json.Unmarshal([]byte(result), &dataMap); err == nil {
-			assets := make(map[string]string)
-			for _, value := range dataMap["assets"].([]interface{}) {
-				item := value.(map[string]interface{})
-				if item["name"] != nil {
-					assets[item["name"].(string)] = item["browser_download_url"].(string)
-				}
-			}
-			return dataMap["tag_name"].(string), dataMap["created_at"].(string), assets
-		}
+	return Source{
+		tag:     "",
+		created: "",
+		assets:  nil,
 	}
-	return "", "", nil
+}
+
+// 获取指定tag版本
+func listTagVersion()  {
+//	Gitee
 }
 
 // 获取所有可下载版本
-func listAll(repo string) {
+func listAll(repo string) []Source {
 	// Gitee
 	if repo == "gitee" {
-		u, _ := url.Parse("https://gitee.com/api/v5/repos/HerbertHe/Edever/releases?page=1&per_page=20")
-		res, err := http.Get(u.String())
-		if err != nil {
-			fmt.Println(err)
-		}
-		result, err := ioutil.ReadAll(res.Body)
-		_ = res.Body.Close()
-		if err != nil {
-			fmt.Println(err)
-		}
-
+		result := utils.SendGet("https://gitee.com/api/v5/repos/HerbertHe/Edever/releases?page=1&per_page=20")
 		var dataS []map[string]interface{}
 		if err := json.Unmarshal(result, &dataS); err == nil {
-			fmt.Println("可供更新发行版如下:")
+			var backArray []Source
 			for _, value := range dataS {
-				fmt.Printf("%v\t\t\t%v", value["tag_name"], value["created_at"])
+				var backMap Source
+				cache := make(map[string]string)
+				for _, v := range value["assets"].([]interface{}) {
+					item := v.(map[string]interface{})
+					if item["name"] != nil {
+						cache[item["name"].(string)] = item["browser_download_url"].(string)
+					}
+				}
+				backMap.tag = value["tag_name"].(string)
+				backMap.created = value["created_at"].(string)
+				backMap.assets = cache
+				backArray = append(backArray, backMap)
 			}
+			return backArray
 		}
-
+		return nil
 	}
-
-	// Github
-	if repo == "github" {
-		u, _ := url.Parse("https://gitee.com/api/v5/repos/HerbertHe/Edever/releases?page=1&per_page=20")
-		res, err := http.Get(u.String())
-		if err != nil {
-			fmt.Println(err)
-		}
-		result, err := ioutil.ReadAll(res.Body)
-		_ = res.Body.Close()
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		var dataS []map[string]interface{}
-		if err := json.Unmarshal(result, &dataS); err == nil {
-			fmt.Println("可供更新发行版如下:")
-			for _, value := range dataS {
-				fmt.Printf("%v\t\t\t%v", value["tag_name"], value["created_at"])
-			}
-		}
-
-	}
+	return nil
 }
-
-// 下载
-//func downloadFile() {
-//
-//}
 
 // updateCmd represents the update command
 var updateCmd = &cobra.Command{
@@ -132,30 +97,35 @@ edever update -l 列出仓库所有的发行版(默认为Gitee)
 edever update -d -t (tag) 更新到指定的版本，默认为最新(默认为Gitee)
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("使用edever version即可查看本地版本号\n更新方法请参考edever update -h")
-		name, created, assets := getLatest(repo)
-		fmt.Printf("最新版本: %v\n创建时间: %v\n", name, created)
+		fmt.Printf("使用edever version即可查看本地版本号\n更新方法请参考edever update -h\n\n")
+		latestVersion := getLatest(repo)
+		fmt.Printf("最新版本: %v\n创建时间: %v\n", latestVersion.tag, latestVersion.created)
 		if list {
-			listAll(repo)
+			sources := listAll(repo)
+			fmt.Println("\n可更新的发行版如下")
+			for _, value := range sources {
+				fmt.Printf("%v\t\t\t%v\n", value.tag, value.created)
+				fmt.Println(value.assets)
+			}
 		}
 		if down {
 			switch runtime.GOOS {
 			case "windows":
 				{
 					if tag == "latest" {
-						fmt.Println(assets["edever-win.zip"])
+						fmt.Println(latestVersion.assets["edever-win.zip"])
 					}
 				}
 			case "linux":
 				{
 					if tag == "latest" {
-						fmt.Println(assets["edever-linux.zip"])
+						fmt.Println(latestVersion.assets["edever-linux.zip"])
 					}
 				}
 			case "darwin":
 				{
 					if tag == "latest" {
-						fmt.Println(assets["edever-darwin.zip"])
+						fmt.Println(latestVersion.assets["edever-darwin.zip"])
 					}
 				}
 			}

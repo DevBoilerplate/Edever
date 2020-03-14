@@ -16,9 +16,9 @@ var (
 )
 
 type Source struct {
-	tag string
+	tag     string
 	created string
-	assets map[string]string
+	assets  map[string]string
 }
 
 func getLatest(repo string) Source {
@@ -52,9 +52,55 @@ func getLatest(repo string) Source {
 	}
 }
 
+// 获取所有的tag
+func listTags(repo string) []string {
+	// Gitee
+	if repo == "gitee" {
+		result := utils.SendGet("https://gitee.com/api/v5/repos/HerbertHe/Edever/tags")
+		var res []map[string]interface{}
+		if err := json.Unmarshal(result, &res); err == nil {
+			var backTags []string
+			for _, value := range res {
+				backTags = append(backTags, value["name"].(string))
+			}
+			return backTags
+		}
+		return nil
+	}
+	return nil
+}
+
 // 获取指定tag版本
-func listTagVersion()  {
-//	Gitee
+func listTagVersion(repo, tag string) Source {
+	//	Gitee
+	if repo == "gitee" {
+		result := utils.SendGet("https://gitee.com/api/v5/repos/HerbertHe/Edever/releases/tags/" + tag)
+		var dataMap map[string]interface{}
+		if err := json.Unmarshal([]byte(result), &dataMap); err == nil {
+			assets := make(map[string]string)
+			var source Source
+			for _, value := range dataMap["assets"].([]interface{}) {
+				item := value.(map[string]interface{})
+				if item["name"] != nil {
+					assets[item["name"].(string)] = item["browser_download_url"].(string)
+				}
+			}
+			source.tag = dataMap["tag_name"].(string)
+			source.created = dataMap["created_at"].(string)
+			source.assets = assets
+			return source
+		}
+		return Source{
+			tag:     "",
+			created: "",
+			assets:  nil,
+		}
+	}
+	return Source{
+		tag:     "",
+		created: "",
+		assets:  nil,
+	}
 }
 
 // 获取所有可下载版本
@@ -108,6 +154,7 @@ edever update -d -t (tag) 更新到指定的版本，默认为最新(默认为Gi
 				fmt.Println(value.assets)
 			}
 		}
+
 		if down {
 			switch runtime.GOOS {
 			case "windows":
@@ -115,17 +162,27 @@ edever update -d -t (tag) 更新到指定的版本，默认为最新(默认为Gi
 					if tag == "latest" {
 						fmt.Println(latestVersion.assets["edever-win.zip"])
 					}
+
+					if tag != "latest" {
+						fmt.Println(listTagVersion(repo, tag))
+					}
 				}
 			case "linux":
 				{
 					if tag == "latest" {
 						fmt.Println(latestVersion.assets["edever-linux.zip"])
 					}
+					if tag != "latest" {
+						fmt.Println(listTagVersion(repo, tag))
+					}
 				}
 			case "darwin":
 				{
 					if tag == "latest" {
 						fmt.Println(latestVersion.assets["edever-darwin.zip"])
+					}
+					if tag != "latest" {
+						fmt.Println(listTagVersion(repo, tag))
 					}
 				}
 			}

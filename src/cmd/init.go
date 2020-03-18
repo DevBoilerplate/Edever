@@ -8,9 +8,12 @@ import (
 )
 
 var (
-	remote   string
-	projName string
-	temp     string
+	repo string        // 目标仓库
+	list bool          // 确认列出
+	down bool          // 确认下载
+	tag  string        // tag指定
+	temp string        // package的模板选择
+	projectName string    // 指定Clone的仓库
 )
 
 // initCmd represents the init command
@@ -19,42 +22,40 @@ var initCmd = &cobra.Command{
 	Short: "用于获取最新模板初始化项目",
 	Long: `
 从远程获取项目模板
-edever init -r [github/gitee] 从Gitee获取(默认从Gitee)
-edever init -d 自定义clone的项目名称(默认为仓库名称)
-edever init --temp [sample/sqlite3/ts] 获取指定版本的模板(默认为sample)
+edever init [-d (自定义项目名称)] [--temp (sample/sqlite3/ts)] [-r (github/gitee)] 
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("正在从远端拉取模板...")
-		if remote == "gitee" && temp == "sample" {
+		if repo == "gitee" && temp == "sample" {
 			fmt.Println("正在从Gitee拉取sample模板...")
-			utils.GitTemp("https://gitee.com/HerbertHe/electron-react-antd-antv-cli.git", projName)
+			utils.GitTemp("https://gitee.com/HerbertHe/electron-react-antd-antv-cli.git", projectName)
 		}
-		if remote == "gitee" && temp == "sqlite3" {
+		if repo == "gitee" && temp == "sqlite3" {
 			fmt.Println("正在从Gitee拉取含sqlite3的sample模板...")
-			utils.GitTemp("https://gitee.com/HerbertHe/electron-react-antd-antv-sqlite3-cli.git", projName)
+			utils.GitTemp("https://gitee.com/HerbertHe/electron-react-antd-antv-sqlite3-cli.git", projectName)
 		}
-		if remote == "github" && temp == "sample" {
+		if repo == "github" && temp == "sample" {
 			fmt.Println("正在从GitHub拉取模板...")
-			utils.GitTemp("https://github.com/HerbertHe/electron-react-antd-antv-cli.git", projName)
+			utils.GitTemp("https://github.com/HerbertHe/electron-react-antd-antv-cli.git", projectName)
 		}
-		if remote == "github" && temp == "sqlite3" {
+		if repo == "github" && temp == "sqlite3" {
 			fmt.Println("正在从GitHub拉取含sqlite3的模板...")
-			utils.GitTemp("https://github.com/HerbertHe/electron-react-antd-antv-sqlite3-cli.git", projName)
+			utils.GitTemp("https://github.com/HerbertHe/electron-react-antd-antv-sqlite3-cli.git", projectName)
 		}
-		if remote == "gitee" && temp == "ts" {
+		if repo == "gitee" && temp == "ts" {
 			fmt.Println("正在从Gitee拉取ts版模板...")
-			utils.GitTemp("https://gitee.com/HerbertHe/electron-react-antd-antv-ts-cli.git", projName)
+			utils.GitTemp("https://gitee.com/HerbertHe/electron-react-antd-antv-ts-cli.git", projectName)
 		}
-		if remote == "github" && temp == "ts" {
+		if repo == "github" && temp == "ts" {
 			fmt.Println("正在从GitHub拉取ts版模板...")
-			utils.GitTemp("https://github.com/HerbertHe/electron-react-antd-antv-ts-cli.git", projName)
+			utils.GitTemp("https://github.com/HerbertHe/electron-react-antd-antv-ts-cli.git", projectName)
 		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(initCmd)
-	initCmd.Flags().StringVarP(&remote, "repo", "r", "gitee", "edever init -r [github/gitee]")
+	initCmd.Flags().StringVarP(&repo, "repo", "r", "gitee", "edever init -r [github/gitee]")
 	initCmd.Flags().StringVar(&temp, "temp", "sample", "edever init --temp[sample/sqlite3/ts]")
-	initCmd.Flags().StringVarP(&projName, "dirname", "d", "ElectronProjectTemplate", "edever init -d (dirname)")
+	initCmd.Flags().StringVarP(&projectName, "dirname", "d", "ElectronProjectTemplate", "edever init -d (dirname)")
 }

@@ -1,6 +1,8 @@
 package utils
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // 数据类型
 type Source struct {
@@ -28,9 +30,13 @@ func MakeGiteeReleaseLatest(remote string) string {
 }
 
 // 构造tags
-
 func MakeGiteeTags(remote string) string {
 	return giteeRemote[remote] + "/tags"
+}
+
+// 构造指定tag
+func MakeGiteeReleaseTag(remote, tag string) string {
+	return giteeRemote[remote] + "/releases/tags/" + tag
 }
 
 // 获取最新更新
@@ -45,6 +51,9 @@ func GetLatest(repo, remote string) Source {
 				item := value.(map[string]interface{})
 				if item["name"] != nil {
 					assets[item["name"].(string)] = item["browser_download_url"].(string)
+				}
+				if remote == "eraac" || remote == "eraatc" || remote == "eraasc" {
+					assets["url"] = item["browser_download_url"].(string)
 				}
 			}
 			source.Tag = dataMap["tag_name"].(string)
@@ -87,7 +96,7 @@ func ListTags(repo, remote string) []string {
 func ListTagVersion(repo, tag, remote string) Source {
 	//	Gitee
 	if repo == "gitee" {
-		result := SendGet(MakeGiteeTags(remote) + "/" + tag)
+		result := SendGet(MakeGiteeReleaseTag(remote, tag))
 		var dataMap map[string]interface{}
 		if err := json.Unmarshal([]byte(result), &dataMap); err == nil {
 			assets := make(map[string]string)
@@ -97,6 +106,9 @@ func ListTagVersion(repo, tag, remote string) Source {
 					item := value.(map[string]interface{})
 					if item["name"] != nil {
 						assets[item["name"].(string)] = item["browser_download_url"].(string)
+					}
+					if remote == "eraac" || remote == "eraatc" || remote == "eraasc" {
+						assets["url"] = item["browser_download_url"].(string)
 					}
 				}
 				source.Tag = dataMap["tag_name"].(string)
@@ -139,6 +151,9 @@ func ListAll(repo, remote string) []Source {
 					item := v.(map[string]interface{})
 					if item["name"] != nil {
 						cache[item["name"].(string)] = item["browser_download_url"].(string)
+					}
+					if remote == "eraac" || remote == "eraatc" || remote == "eraasc" {
+						cache["url"] = item["browser_download_url"].(string)
 					}
 				}
 				backMap.Tag = value["tag_name"].(string)

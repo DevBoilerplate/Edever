@@ -1,22 +1,9 @@
-/*
-Copyright © 2020 NAME HERE <EMAIL ADDRESS>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package cmd
 
 import (
+	"cobra.new/utils"
 	"fmt"
+	"runtime"
 
 	"github.com/spf13/cobra"
 )
@@ -24,28 +11,90 @@ import (
 // packageCmd represents the package command
 var packageCmd = &cobra.Command{
 	Use:   "package",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "用于获取任意版本模板",
+	Long: `
+edever package -d 即可自动获取最新版(默认为Gitee)
+edever package -d -r [github/gitee](默认Gitee) 选择目标仓库
+edever package -l 列出仓库所有的发行版(默认为Gitee)
+edever package -d -t (tag) 更新到指定的版本，默认为最新(默认为Gitee)
+`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("package called")
+		fmt.Printf("使用edever version即可查看本地版本号\n更新方法请参考edever update -h\n")
+		latestVersion := utils.GetLatest(repo, "edever")
+		fmt.Printf("最新版本: \t%v\n创建时间: \t%v\n\n", latestVersion.Tag, latestVersion.Created)
+		if list {
+			sources := utils.ListAll(repo, "edever")
+			fmt.Println("\n可更新的发行版如下")
+			for _, value := range sources {
+				fmt.Printf("%v\t\t\t%v\n", value.Tag, value.Created)
+				fmt.Println(value.Assets)
+			}
+		}
+
+		if down {
+			switch runtime.GOOS {
+			case "windows":
+				{
+					if tag == "latest" {
+						utils.GetByBrowser(latestVersion.Assets["edever-win.zip"])
+					}
+
+					if tag != "latest" {
+						version := utils.ListTagVersion(repo, tag, "edever")
+						if version.Assets == nil {
+							fmt.Printf("没有查询到您请求的指定tag版本:\t%v\n", version.Tag)
+							fmt.Printf("可以指定获取的版本为:\t%v\n", utils.ListTags(repo, "edever"))
+						} else {
+							version := utils.ListTagVersion(repo, tag, "edever")
+							fmt.Printf("检测到: \t%v\n更新时间: \t%v\n", version.Tag, version.Created)
+							utils.GetByBrowser(version.Assets["edever-win.zip"])
+						}
+					}
+				}
+			case "linux":
+				{
+					if tag == "latest" {
+						utils.GetByBrowser(latestVersion.Assets["edever-linux.zip"])
+					}
+					if tag != "latest" {
+						version := utils.ListTagVersion(repo, tag, "edever")
+						if version.Assets == nil {
+							fmt.Printf("没有查询到您请求的指定tag版本:\t%v\n", version.Tag)
+							fmt.Printf("可以指定获取的版本为:\t%v\n", utils.ListTags(repo, "edever"))
+						} else {
+							version := utils.ListTagVersion(repo, tag, "edever")
+							fmt.Printf("检测到: \t%v\n更新时间: \t%v\n", version.Tag, version.Created)
+							utils.GetByBrowser(version.Assets["edever-linux.zip"])
+						}
+					}
+				}
+			case "darwin":
+				{
+					if tag == "latest" {
+						utils.GetByBrowser(latestVersion.Assets["edever-darwin.zip"])
+					}
+					if tag != "latest" {
+						version := utils.ListTagVersion(repo, tag, "edever")
+						if version.Assets == nil {
+							fmt.Printf("没有查询到您请求的指定tag版本:\t%v\n", version.Tag)
+							fmt.Printf("可以指定获取的版本为:\t%v\n", utils.ListTags(repo, "edever"))
+						} else {
+							version := utils.ListTagVersion(repo, tag, "edever")
+							fmt.Printf("检测到: \t%v\n更新时间: \t%v\n", version.Tag, version.Created)
+							utils.GetByBrowser(version.Assets["edever-mac.zip"])
+						}
+					}
+				}
+			}
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(packageCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// packageCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// packageCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	packageCmd.Flags().StringVarP(&repo, "repo", "r", "gitee", "edever package -d -r [github/gitee]")
+	packageCmd.Flags().BoolVarP(&list, "list", "l", false, "edever package -l")
+	packageCmd.Flags().StringVar(&temp, "temp", "sample", "edever init --temp[sample/sqlite3/ts]")
+	packageCmd.Flags().StringVarP(&tag, "tag", "t", "latest", "edever package -t (tag)")
+	packageCmd.Flags().BoolVarP(&down, "down", "d", false, "edever package -d [-r/-t]")
 }

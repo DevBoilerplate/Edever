@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os/exec"
+	"runtime"
 )
 
 func SendGet(link string) []byte {
@@ -31,4 +32,17 @@ func GitTemp(link string, projName string) {
 		fmt.Println("模板拉取成功！使用请参考工程目录下的README.md")
 		fmt.Printf("工程位于: %v", projName)
 	}
+}
+
+var commands = map[string]string{
+	"windows": "start",
+	"darwin": "open",
+	"linux": "xdg-open",
+}
+
+// 打开浏览发送请求
+func GetByBrowser(url string) {
+	fmt.Println("正在跳转: \t" + url)
+	cmd := exec.Command(commands[runtime.GOOS] + url)
+	_ = cmd.Start()
 }

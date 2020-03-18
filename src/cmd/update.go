@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"cobra.new/utils"
-	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 	"runtime"
@@ -15,123 +14,6 @@ var (
 	tag  string
 )
 
-type Source struct {
-	tag     string
-	created string
-	assets  map[string]string
-}
-
-func getLatest(repo string) Source {
-	if repo == "gitee" {
-		result := utils.SendGet("https://gitee.com/api/v5/repos/HerbertHe/Edever/releases/latest")
-		var dataMap map[string]interface{}
-		if err := json.Unmarshal([]byte(result), &dataMap); err == nil {
-			assets := make(map[string]string)
-			var source Source
-			for _, value := range dataMap["assets"].([]interface{}) {
-				item := value.(map[string]interface{})
-				if item["name"] != nil {
-					assets[item["name"].(string)] = item["browser_download_url"].(string)
-				}
-			}
-			source.tag = dataMap["tag_name"].(string)
-			source.created = dataMap["created_at"].(string)
-			source.assets = assets
-			return source
-		}
-		return Source{
-			tag:     "",
-			created: "",
-			assets:  nil,
-		}
-	}
-	return Source{
-		tag:     "",
-		created: "",
-		assets:  nil,
-	}
-}
-
-// 获取所有的tag
-func listTags(repo string) []string {
-	// Gitee
-	if repo == "gitee" {
-		result := utils.SendGet("https://gitee.com/api/v5/repos/HerbertHe/Edever/tags")
-		var res []map[string]interface{}
-		if err := json.Unmarshal(result, &res); err == nil {
-			var backTags []string
-			for _, value := range res {
-				backTags = append(backTags, value["name"].(string))
-			}
-			return backTags
-		}
-		return nil
-	}
-	return nil
-}
-
-// 获取指定tag版本
-func listTagVersion(repo, tag string) Source {
-	//	Gitee
-	if repo == "gitee" {
-		result := utils.SendGet("https://gitee.com/api/v5/repos/HerbertHe/Edever/releases/tags/" + tag)
-		var dataMap map[string]interface{}
-		if err := json.Unmarshal([]byte(result), &dataMap); err == nil {
-			assets := make(map[string]string)
-			var source Source
-			for _, value := range dataMap["assets"].([]interface{}) {
-				item := value.(map[string]interface{})
-				if item["name"] != nil {
-					assets[item["name"].(string)] = item["browser_download_url"].(string)
-				}
-			}
-			source.tag = dataMap["tag_name"].(string)
-			source.created = dataMap["created_at"].(string)
-			source.assets = assets
-			return source
-		}
-		return Source{
-			tag:     "",
-			created: "",
-			assets:  nil,
-		}
-	}
-	return Source{
-		tag:     "",
-		created: "",
-		assets:  nil,
-	}
-}
-
-// 获取所有可下载版本
-func listAll(repo string) []Source {
-	// Gitee
-	if repo == "gitee" {
-		result := utils.SendGet("https://gitee.com/api/v5/repos/HerbertHe/Edever/releases?page=1&per_page=20")
-		var dataS []map[string]interface{}
-		if err := json.Unmarshal(result, &dataS); err == nil {
-			var backArray []Source
-			for _, value := range dataS {
-				var backMap Source
-				cache := make(map[string]string)
-				for _, v := range value["assets"].([]interface{}) {
-					item := v.(map[string]interface{})
-					if item["name"] != nil {
-						cache[item["name"].(string)] = item["browser_download_url"].(string)
-					}
-				}
-				backMap.tag = value["tag_name"].(string)
-				backMap.created = value["created_at"].(string)
-				backMap.assets = cache
-				backArray = append(backArray, backMap)
-			}
-			return backArray
-		}
-		return nil
-	}
-	return nil
-}
-
 // updateCmd represents the update command
 var updateCmd = &cobra.Command{
 	Use:   "update",
@@ -143,15 +25,15 @@ edever update -l 列出仓库所有的发行版(默认为Gitee)
 edever update -d -t (tag) 更新到指定的版本，默认为最新(默认为Gitee)
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("使用edever version即可查看本地版本号\n更新方法请参考edever update -h\n\n")
-		latestVersion := getLatest(repo)
-		fmt.Printf("最新版本: %v\n创建时间: %v\n", latestVersion.tag, latestVersion.created)
+		fmt.Printf("使用edever version即可查看本地版本号\n更新方法请参考edever update -h\n")
+		latestVersion := utils.GetLatest(repo, "edever")
+		fmt.Printf("最新版本: \t%v\n创建时间: \t%v\n\n", latestVersion.Tag, latestVersion.Created)
 		if list {
-			sources := listAll(repo)
+			sources := utils.ListAll(repo, "edever")
 			fmt.Println("\n可更新的发行版如下")
 			for _, value := range sources {
-				fmt.Printf("%v\t\t\t%v\n", value.tag, value.created)
-				fmt.Println(value.assets)
+				fmt.Printf("%v\t\t\t%v\n", value.Tag, value.Created)
+				fmt.Println(value.Assets)
 			}
 		}
 
@@ -160,29 +42,53 @@ edever update -d -t (tag) 更新到指定的版本，默认为最新(默认为Gi
 			case "windows":
 				{
 					if tag == "latest" {
-						fmt.Println(latestVersion.assets["edever-win.zip"])
+						utils.GetByBrowser(latestVersion.Assets["edever-win.zip"])
 					}
 
 					if tag != "latest" {
-						fmt.Println(listTagVersion(repo, tag))
+						version := utils.ListTagVersion(repo, tag, "edever")
+						if version.Assets == nil {
+							fmt.Printf("没有查询到您请求的指定tag版本:\t%v\n", version.Tag)
+							fmt.Printf("可以指定获取的版本为:\t%v\n", utils.ListTags(repo, "edever"))
+						} else {
+							version := utils.ListTagVersion(repo, tag, "edever")
+							fmt.Printf("检测到: \t%v\n更新时间: \t%v\n", version.Tag, version.Created)
+							utils.GetByBrowser(version.Assets["edever-win.zip"])
+						}
 					}
 				}
 			case "linux":
 				{
 					if tag == "latest" {
-						fmt.Println(latestVersion.assets["edever-linux.zip"])
+						utils.GetByBrowser(latestVersion.Assets["edever-linux.zip"])
 					}
 					if tag != "latest" {
-						fmt.Println(listTagVersion(repo, tag))
+						version := utils.ListTagVersion(repo, tag, "edever")
+						if version.Assets == nil {
+							fmt.Printf("没有查询到您请求的指定tag版本:\t%v\n", version.Tag)
+							fmt.Printf("可以指定获取的版本为:\t%v\n", utils.ListTags(repo, "edever"))
+						} else {
+							version := utils.ListTagVersion(repo, tag, "edever")
+							fmt.Printf("检测到: \t%v\n更新时间: \t%v\n", version.Tag, version.Created)
+							utils.GetByBrowser(version.Assets["edever-linux.zip"])
+						}
 					}
 				}
 			case "darwin":
 				{
 					if tag == "latest" {
-						fmt.Println(latestVersion.assets["edever-darwin.zip"])
+						utils.GetByBrowser(latestVersion.Assets["edever-darwin.zip"])
 					}
 					if tag != "latest" {
-						fmt.Println(listTagVersion(repo, tag))
+						version := utils.ListTagVersion(repo, tag, "edever")
+						if version.Assets == nil {
+							fmt.Printf("没有查询到您请求的指定tag版本:\t%v\n", version.Tag)
+							fmt.Printf("可以指定获取的版本为:\t%v\n", utils.ListTags(repo, "edever"))
+						} else {
+							version := utils.ListTagVersion(repo, tag, "edever")
+							fmt.Printf("检测到: \t%v\n更新时间: \t%v\n", version.Tag, version.Created)
+							utils.GetByBrowser(version.Assets["edever-mac.zip"])
+						}
 					}
 				}
 			}

@@ -14,6 +14,7 @@ var (
 	tag  string        // tag指定
 	temp string        // package的模板选择
 	projectName string    // 指定Clone的仓库
+	platform string       // 指定编译平台
 )
 
 // initCmd represents the init command

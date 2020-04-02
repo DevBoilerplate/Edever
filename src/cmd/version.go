@@ -15,7 +15,7 @@ var versionCmd = &cobra.Command{
 edever version 显示当前版本信息
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Edever当前版本为: %v\n", "v0.1.0")
+		fmt.Printf("Edever当前版本为: %v\n", "v0.1.1")
 		fmt.Printf("当前系统: %v\n", runtime.GOOS)
 		fmt.Printf("系统架构: %v\n", runtime.GOARCH)
 	},

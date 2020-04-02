@@ -81,6 +81,10 @@ edever -h
 | -t, --tag | 指定tag更新 | 默认为latest |
 | --temp | 指定模板 | sample/ts/sqlite3, 默认为sample |
 
+## TODOS
+
+* [ ] 完善build子命令，支持`edever`接管编译`package.json`对于不同编译配置的需求
+
 ## Gitee&&GitHub
 
 GitHub: [HerbertHe/Edever](https://github.com/HerbertHe/Edever)
